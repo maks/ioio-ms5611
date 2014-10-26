@@ -129,6 +129,7 @@ public class MS5611 implements IOIOLooper {
 	private long TCS;
 	private long TCO;
 	private long T_REF;
+	private long TEMPSENS;
 	
 	private int D1; // 24 bit unsigned int
 	private int D2; // 24 bit unsigned int
@@ -217,7 +218,7 @@ public class MS5611 implements IOIOLooper {
 	}
 	
 	/**
-	 * Writes the write buffer to the SPI.
+	 * Writes the write buffer to the I2C.
 	 * 
 	 * @param length Number of bytes of the buffer to write.
 	 * @throws ConnectionLostException
@@ -257,11 +258,12 @@ public class MS5611 implements IOIOLooper {
 			onError(this.getClass().getSimpleName() + " PROM CRC mismatch, " + CRC + " (read) != " + crc4 + " (calculated).");
 		}
 		
-		SENS_T1 = C1 * 32768 /* 2^15 */;
-		OFF_T1  = C2 * 65536 /* 2^16 */;
-		TCS     = C3 / 256 /* 2^8 */;
-		TCO     = C4 / 128 /* 2^7 */;
-		T_REF   = C5 * 256 /* 2^8 */;
+		SENS_T1  = C1 * 32768 /* 2^15 */;
+		OFF_T1   = C2 * 65536 /* 2^16 */;
+		TCS      = C3 / 256 /* 2^8 */;
+		TCO      = C4 / 128 /* 2^7 */;
+		T_REF    = C5 * 256 /* 2^8 */;
+		TEMPSENS = C6 / 8388608 /* 2^23 */;
 	}
 	
 	private void conversion() throws ConnectionLostException, InterruptedException {
@@ -330,7 +332,7 @@ public class MS5611 implements IOIOLooper {
 		long OFF  = OFF_T1  + dT * TCO;
 		long SENS = SENS_T1 + dT * TCS;
 		
-		int T = 2000 + (int) (dT * C6 / 8388608 /* 2^23 */);
+		int T = 2000 + (int) (dT * TEMPSENS);
 		int P = (int) ((D1 * SENS / 2097152 /* 2^21 */ - OFF) / 32768 /* 2^15 */);
 		
 		if (listener != null) {
@@ -343,13 +345,16 @@ public class MS5611 implements IOIOLooper {
 	@Override
 	public void disconnected() {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void incompatible() {
+		// deprecated
+	}
+
+	@Override
+	public void incompatible(IOIO ioio) {
 		// TODO Auto-generated method stub
-		
 	}
 
 }
